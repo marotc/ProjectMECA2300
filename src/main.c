@@ -1,28 +1,17 @@
 #include "neighborhood_search.h"
+#include "point.h"
+#include "kernel.h"
 
 int NPTS = 100;
-
-// for v, a floating point value between 0 and 1, this function fills color with
-// the improved jet colormap color corresponding to v
-static void colormap(float v, float color[3])
-{
-	float v1 = 3.5 * (v - 0.7);
-	float v2 = 1.25 * v;
-	float v3 = fminf(0.5, v) * 2.0;
-
-	color[0] = -v1 * v1 + 1.0f;
-	color[1] = 6.0f * v2 * v2 * (1.0f - v2);
-	color[2] = 5.5f * v3 * (1.0f - v3) * (1.0f - v3);
-
-	// alternative: classical jet colormap
-	// color[0] = 1.5 - 4.0 * fabs(v - 0.75);
-	// color[1] = 1.5 - 4.0 * fabs(v - 0.5 );
-	// color[2] = 1.5 - 4.0 * fabs(v - 0.25);
-}
+double SOURCE_TEMP = 1000;
+double INIT_TEMP = 273;
+int DOM = 200; //Utile ?
+int NUMBER_ITERATIONS = 10;
 
 // function to fill the data table of the nPoints particles positions, speeds, colors and transparency and the coord table with the nPoints particles positions used to draw;
 // data[i][0] == coord[i][0] && data[i][1] == coord[i][1]
-void fillData(GLfloat(* data)[8])
+
+/*void fillData(GLfloat(* data)[8])
 {
 	float rmax = 100.0 * sqrtf(2.0f);
 	for (int i = 0; i < NPTS; i++) {
@@ -34,30 +23,39 @@ void fillData(GLfloat(* data)[8])
 		colormap(r / rmax, &data[i][4]); // fill color
 		data[i][7] = 0.8f; // transparency
 	}
-}
+}*/
+
 int main()
 {
+	point* points = malloc(sizeof(point) * NPTS);
+	fillPointsGrid(points);
+	//kernel(points,neighbors,kh);
 	GLfloat(*data)[8] = malloc(sizeof(data[0]) * NPTS);
 	CHECK_MALLOC(data);
 	// Seed the random
 	time_t seed = time(NULL);
 	//printf(" %u \n", seed);
 	srand(seed);
-	fillData(data);
+	updateData(points, data);
+	//fillData(data);
+
 
 	double timestep = 0.5;
 	double maxspeed = 1;
 	neighborhood_options* options = neighborhood_options_init(timestep, maxspeed);
 	neighborhood* nh = options->nh;
-	int number_of_iterations = 10;
-	for (int iterations = 0; iterations < number_of_iterations;iterations++) {
+	
+	for (int iterations = 0; iterations < NUMBER_ITERATIONS;iterations++) {
 		if(iterations)
-			bouncyrandomupdate(data, timestep, options->half_length, maxspeed);
-		neighborhood_update(options, nh, data, iterations);
+			bouncyrandomupdate(points, timestep, options->half_length, maxspeed); 
+		neighborhood_update(options, nh, points, iterations);
 		//kernel(data, nh, kh);
 	}
+	printNeighborhood(nh, points);
+
 	neighborhood_options_delete(options,nh);
 
 	free(data);
+	free(points);
 	return EXIT_SUCCESS;
 }

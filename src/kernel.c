@@ -4,7 +4,8 @@
 
 
 // Implementation of the kernel cubic function and return the weight regarding the distance and the radius of the circle
-
+int DENSITY = 1;
+int MASS = 1;
 
 void kernel(GLfloat(*data)[14], GLfloat(*coord)[2], neighborhood* nh, double kh) {
     for (int i = 0; i < NPTS; i++) {

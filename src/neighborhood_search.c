@@ -1,4 +1,5 @@
 #include "neighborhood_search.h"
+#include "point.h"
 #include <math.h>
 
 
@@ -132,6 +133,16 @@ void cell_delete(cell* c, GLsizei n) {
 	}
 }
 
+//NEW VERSION
+void printNeighborhood(neighborhood* nh, point *points) {
+	for (int i = 0; i < NPTS; i++) {
+		printf("Resident %i : coordinate: %f %f   number of neighbours %i\n", i + 1, points[i].x, points[i].y, nh[i].nNeighbours);
+		int j = 1;
+		for (neighbours* current = nh[i].list; current; current = current->next)
+			printf("   Neighbours %i : %f %f\n", j++, points[current->index].x, points[current->index].y);
+	}
+}
+/*
 void printNeighborhood(neighborhood* nh, GLfloat(* data)[8]) {
 	for (int i = 0; i < NPTS; i++) {
 		printf("Resident %i : coordinate: %f %f   number of neighbours %i\n", i + 1, data[i][0], data[i][1], nh[i].nNeighbours);
@@ -140,8 +151,22 @@ void printNeighborhood(neighborhood* nh, GLfloat(* data)[8]) {
 			printf("   Neighbours %i : %f %f\n", j++, data[current->index][0], data[current->index][1]);
 	}
 }
+*/
+//NEW VERSION
+// function used to print cells
+// points : table of the points' of the particles
+// c : array of cells to be printed
+// size : number of cells in the simulation
+void printCell(point* points, cell* c, int size) {
+	for (int i = 0; i < size; i++) {
+		printf("Cell %i : %i\n", i + 1, c[i].nResident);
+		int j = 1;
+		for (node* current = c[i].ResidentList; current; current = current->next)
+			printf("   Neighbours %i : %f %f\n", j++, points[current->index].x, points[current->index].y);
+	}
+}
 
-
+/*
 // function used to print cells
 // data : table of the data's of the particles
 // c : array of cells to be printed
@@ -154,31 +179,198 @@ void printCell(GLfloat(* data)[8], cell* c, int size) {
 			printf("   Neighbours %i : %f %f\n", j++, data[current->index][0], data[current->index][1]);
 	}
 }
+*/
 
+//NEW VERSION
+void neighborhood_update(neighborhood_options* options, neighborhood* nh, point* points, int iterations) {
+	if (options->use_verlet)
+		iterations = iterations % options->optimal_verlet_steps;
+	else
+		iterations = 0;
 
-// funtion to compute the radius kh of the circle of influence of a particle
-// nPoints : number of particles in the simulation
-// RA : int used as a boolean to choose over the algorithm of the radius choice; 
-//      0 means the dummy algorithm, 1 means the more sophisticated algorithm expalined at the seminar ( (intersection between areaGrid and 1/4 areaCircle)/areaGrid = 21/nPoints)
-double compute_kh(int RA) {
-	double target = 21.0 / NPTS;
-	if (NPTS < 21)
-		return sqrt(2.0);
-	else if (!RA)
-		return sqrt(2.0) * target;
-	else if (target <= M_PI / 4)
-		return sqrt(4 * target / M_PI);
-	double tolerance = 0.0000000001;
-	double kh_min = 1.0;
-	double kh_max = sqrt(2.0);
-	while (fabs(kh_max - kh_min) >= tolerance) {
-		kh_max = kh_min;
-		kh_min = sqrt((target - sin(acos(1.0 / kh_min)) * kh_min) / ((M_PI / 4 - acos(1.0 / kh_min))));
+	if (options->use_verlet && iterations)
+		neighborhood_new(nh, 1);
+	else
+		neighborhood_new(nh, 0);
+
+	double kh = options->kh;
+	int use_verlet = options->use_verlet;
+	double L = 0.0;
+	if (use_verlet) {
+		L = options->L;
 	}
-	return kh_min;
+	int use_improved_method = options->use_improved_method;
+	int half_length = options->half_length;
+	int use_cells = options->use_cells && (kh + L) < half_length / 3.0;
+	int size = ceil(half_length / (kh + L));
+	cell* cellArray = NULL;
+	if (use_cells) {
+		cellArray = cell_new(ceil(size) * ceil(size));
+		for (int i = 0; i < NPTS; i++) {
+			int cellNumber = ((int)((points[i].y + half_length) / (2 * half_length) * size) * ceil(size) + (int)((points[i].x + half_length) / (2 * half_length) * size));
+			if (points[i].y == half_length)
+				cellNumber -= size;
+			if (points[i].x == half_length)
+				cellNumber -= 1;
+			node_new(cellArray, cellNumber, i);
+		}
+	}
+	int cellCounter = 0;
+	unsigned long frameCount = 0;
+	int i = 0;
+	int	j = 1;
+	int checking_cell_number = -1;
+	int this_cell_number = -1;
+	int checked_cells = 0;
+	cell checking_cell;
+	node checking_node;
+	neighbours checking_neighbours;
+	cell this_cell;
+	node this_node;
+	int i_check = i - 1;
+	int j_check = j - 1;
+	int are_still_neighbours = 1;
+	while ((((use_verlet && iterations && use_cells) || !use_cells) && i < NPTS) || (use_cells && this_cell_number < size * size)) {
+		if (i != i_check) {
+			int are_still_neighbours = 1;
+			if (use_verlet && iterations) {
+				if (nh[i].potential_list) {
+					checking_neighbours = nh[i].potential_list[0];
+				}
+				else {
+					are_still_neighbours = 0;
+				}
+			}
+			else if (use_cells) {
+				if (i == 0) {
+					this_cell_number = cellCounter;
+					cellCounter++;
+					while (!cellArray[this_cell_number].nResident && this_cell_number < size * size) {
+						this_cell_number = cellCounter;
+						cellCounter++;
+					}
+					if (this_cell_number < size * size) {
+						this_cell = cellArray[this_cell_number];
+						this_node = this_cell.ResidentList[0];
+					}
+				}
+				else {
+					if (this_node.next)
+						this_node = *this_node.next;
+					else {
+						this_cell_number = cellCounter;
+						cellCounter++;
+						while (this_cell_number < size * size && !cellArray[this_cell_number].nResident && !cellArray[this_cell_number].ResidentList) {
+							this_cell_number = cellCounter;
+							cellCounter++;
+						}
+						if (this_cell_number < size * size) {
+							this_cell = cellArray[this_cell_number];
+							this_node = this_cell.ResidentList[0];
+						}
+					}
+				}
+				checked_cells = 0;
+				if (use_improved_method && this_cell_number < size * size) {
+					if (this_node.next) {
+						checking_cell_number = this_cell_number;
+						checking_cell = cellArray[checking_cell_number];
+						checking_node = *this_node.next;
+					}
+					else {
+						checking_cell_number = find_next_cell(this_cell_number, ++checked_cells, size, use_improved_method);
+						while (checking_cell_number != -1 && !cellArray[checking_cell_number].nResident && !cellArray[checking_cell_number].ResidentList)
+							checking_cell_number = find_next_cell(this_cell_number, ++checked_cells, size, use_improved_method);
+						if (checking_cell_number != -1) {
+							checking_cell = cellArray[checking_cell_number];
+							checking_node = checking_cell.ResidentList[0];
+						}
+					}
+				}
+				else if (this_cell_number < size * size) {
+					checking_cell_number = find_next_cell(this_cell_number, checked_cells, size, use_improved_method);
+					while (checking_cell_number != -1 && !cellArray[checking_cell_number].nResident && !cellArray[checking_cell_number].ResidentList)
+						checking_cell_number = find_next_cell(this_cell_number, ++checked_cells, size, use_improved_method);
+					if (checking_cell_number != -1) {
+						checking_cell = cellArray[checking_cell_number];
+						checking_node = checking_cell.ResidentList[0];
+					}
+				}
+			}
+			if (use_improved_method && !(use_verlet && iterations)) {
+				j_check = i;
+				j = i + 1;
+			}
+		}
+		i_check = i;
+		if ((!(use_verlet && iterations) && use_cells && checking_cell_number == -1) || (use_verlet && iterations && !are_still_neighbours)) {
+			i++;
+			j_check = j;
+		}
+		if (j != j_check) {
+			int index_i, index_j;
+			if (use_verlet && iterations) {
+				index_j = checking_neighbours.index;
+				index_i = i;
+			}
+			else if (use_cells) {
+				index_j = checking_node.index;
+				index_i = this_node.index;
+			}
+			else {
+				index_j = j;
+				index_i = i;
+			}
+			double distance = sqrt((pow(points[index_j].x - points[index_i].x, 2) + pow(points[index_j].y - points[index_i].y, 2)));
+			if (distance <= kh && index_i != index_j) {
+				neighbours_new(index_j, nh, index_i, distance, !iterations, 0);
+				if (use_improved_method)
+					neighbours_new(index_i, nh, index_j, distance, 0, 0);
+			}
+			else if (use_verlet && !iterations && distance <= (kh + L) && index_i != index_j) {
+				neighbours_new(index_j, nh, index_i, distance, !iterations, 1);
+				if (use_improved_method)
+					neighbours_new(index_i, nh, index_j, distance, 0, 1);
+			}
+			if (use_verlet && iterations) {
+				if (checking_neighbours.next) {
+					checking_neighbours = *(checking_neighbours.next);
+				}
+				else
+					i++;
+			}
+			else if (use_cells)
+				if (checking_node.next)
+					checking_node = *(checking_node.next);
+				else {
+					checking_cell_number = find_next_cell(this_cell_number, ++checked_cells, size, use_improved_method);
+					while (checking_cell_number != -1 && !cellArray[checking_cell_number].nResident && !cellArray[checking_cell_number].ResidentList)
+						checking_cell_number = find_next_cell(this_cell_number, ++checked_cells, size, use_improved_method);
+					if (checking_cell_number != -1) {
+						checking_cell = cellArray[checking_cell_number];
+						checking_node = cellArray[checking_cell_number].ResidentList[0];
+					}
+					else
+						i++;
+				}
+			else
+				if (j == NPTS - 1 || (i == NPTS - 1 && (j == NPTS - 2 || use_improved_method))) {
+					i++;
+				}
+		}
+		j_check = j;
+		if (use_improved_method) {
+			j++;
+		}
+		else
+			j = (frameCount) % (NPTS - 1) + (int)(i <= ((frameCount) % (NPTS - 1)));
+		frameCount++;
+	}
+	if (use_cells)
+		cell_delete(cellArray, ceil(size) * ceil(size));
 }
 
-
+/*
 void neighborhood_update(neighborhood_options* options, neighborhood* nh, GLfloat(* data)[8], int iterations) {
 	if (options->use_verlet)
 		iterations = iterations % options->optimal_verlet_steps;
@@ -366,7 +558,7 @@ void neighborhood_update(neighborhood_options* options, neighborhood* nh, GLfloa
 	if (use_cells)
 		cell_delete(cellArray, ceil(size) * ceil(size));
 }
-
+*/
 // function that returns which cell should be checked by a particle situated in this_cell
 // this_cell : number of the cell that contains the particle which the neighborhood is filled
 // checked_cell : number of cells that has already be completely checked for the current particle; serves as a first offset
@@ -420,11 +612,55 @@ int find_next_cell(int this_cell, int checked_cells, int size, int improve) {
 	return -1;
 }
 
+
+//NEW VERSION
 //Changes the particle velocities randomly and updates the positions based, we assume elastic collisions with boundaries:
 //	-timestep: time intervals at which these are updated
 //	-xmin,xmax,ymin,ymax: boundaries of the domain
 //	-maxspeed: the maximum speed that can be reached by the particles
+void bouncyrandomupdate(point* points, double timestep, double half_length, double maxspeed) {
+	for (int i = 0; i < NPTS; i++) {
+		double speed = sqrtf(points[i].vx * points[i].vx + points[i].vy * points[i].vy);
+		points[i].x += points[i].vx * timestep;
+		points[i].y += points[i].vy * timestep;
+		points[i].vx += ((double)rand() / RAND_MAX - 0.5) * (0.05 * maxspeed) * timestep;
+		points[i].vy += ((double)rand() / RAND_MAX - 0.5) * (0.05 * maxspeed) * timestep;
 
+		if (speed > maxspeed) {//Slows down if speed too high
+			points[i].vx = points[i].vx * 0.9;
+			points[i].vy = points[i].vy * 0.9;
+		}
+
+		//This next part of the code handles the cases where a particle bounces of the wall
+
+		//Particle is too high in x
+		if (points[i].x >= half_length) {
+			points[i].x -= 2 * (points[i].x - half_length);
+			points[i].vx = -points[i].vx;
+		}
+		//Particle is too low in x
+		if (points[i].x <= -half_length) {
+			points[i].x -= 2 * (points[i].x + half_length);
+			points[i].vx = -points[i].vx;
+		}
+		//Particle is too high in y
+		if (points[i].y >= half_length) {
+			points[i].y -= 2 * (points[i].y - half_length);
+			points[i].vy = -points[i].vy;
+		}
+		//Particle is too low in y
+		if (points[i].y <= -half_length) {
+			points[i].y -= 2 * (points[i].y + half_length);
+			points[i].vy = -points[i].vy;
+		}
+	}
+}
+
+/*
+//Changes the particle velocities randomly and updates the positions based, we assume elastic collisions with boundaries:
+//	-timestep: time intervals at which these are updated
+//	-xmin,xmax,ymin,ymax: boundaries of the domain
+//	-maxspeed: the maximum speed that can be reached by the particles
 void bouncyrandomupdate(GLfloat(* data)[8], double timestep, double half_length, double maxspeed) {
 	for (int i = 0; i < NPTS; i++) {
 		double speed = sqrtf(data[i][2] * data[i][2] + data[i][3] * data[i][3]);
@@ -462,6 +698,7 @@ void bouncyrandomupdate(GLfloat(* data)[8], double timestep, double half_length,
 		}
 	}
 }
+*/
 
 // function that boils down to solving a cubic function and to find the optimal number of iterations without any update of the potential_list of the neighborhoods
 // timestep : time intervals at which these are updated
