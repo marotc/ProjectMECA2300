@@ -45,11 +45,12 @@ int main()
 	neighborhood_options* options = neighborhood_options_init(timestep, maxspeed);
 	neighborhood* nh = options->nh;
 	
-	for (int iterations = 0; iterations < NUMBER_ITERATIONS;iterations++) {
-		if(iterations)
-			bouncyrandomupdate(points, timestep, options->half_length, maxspeed); 
-		neighborhood_update(options, nh, points, iterations);
-		//kernel(data, nh, kh);
+	for (int iterations = 0; iterations < NUMBER_ITERATIONS; iterations++) {
+		if (iterations) {
+			bouncyrandomupdate(points, timestep, options->half_length, maxspeed);
+			neighborhood_update(options, nh, points, iterations);
+			//kernel(data, nh, kh);
+		}
 	}
 	printNeighborhood(nh, points);
 
