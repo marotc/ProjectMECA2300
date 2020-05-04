@@ -1,10 +1,12 @@
 #include "neighborhood_search.h"
 #include "point.h"
 #include "kernel.h"
+#include <math.h>
 
 int NPTS = 100;
-double SOURCE_TEMP = 1000;
-double INIT_TEMP = 273;
+double MASS = 1;
+//double SOURCE_TEMP = 1000;
+//double INIT_TEMP = 273;
 int DOM = 200; //Utile ?
 int NUMBER_ITERATIONS = 10;
 
@@ -25,11 +27,9 @@ int NUMBER_ITERATIONS = 10;
 	}
 }*/
 
-int main()
-{
+int main(){
 	point* points = malloc(sizeof(point) * NPTS);
 	fillPointsGrid(points);
-	//kernel(points,neighbors,kh);
 	GLfloat(*data)[8] = malloc(sizeof(data[0]) * NPTS);
 	CHECK_MALLOC(data);
 	// Seed the random
@@ -37,19 +37,19 @@ int main()
 	//printf(" %u \n", seed);
 	srand(seed);
 	updateData(points, data);
-	//fillData(data);
 
 
 	double timestep = 0.5;
 	double maxspeed = 1;
 	neighborhood_options* options = neighborhood_options_init(timestep, maxspeed);
 	neighborhood* nh = options->nh;
-	
+	double kh = options->kh;
+	updateDensity(points, nh, kh);
+
 	for (int iterations = 0; iterations < NUMBER_ITERATIONS; iterations++) {
 		if (iterations) {
 			bouncyrandomupdate(points, timestep, options->half_length, maxspeed);
 			neighborhood_update(options, nh, points, iterations);
-			//kernel(data, nh, kh);
 		}
 	}
 	printNeighborhood(nh, points);
