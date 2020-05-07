@@ -17,33 +17,11 @@ void fillPointsGrid(point* points) {
 	for (int i = 0; i < NPTS; i++) {
 		double npt = (double)NPTS;
 		points[i].x = (i % (int)sqrt(npt))*200/ NPTS -100;
-		points[i].y = (i % (int)sqrt(npt))* 200 / NPTS -100;
+		points[i].y = (i / (int)sqrt(npt))* 200 / NPTS -100;
 		points[i].vx = 0 ;
 		points[i].vy = 0 ;
 		points[i].type = 1;
 	}
-}
-
-// funtion to compute the radius kh of the circle of influence of a particle
-// nPoints : number of particles in the simulation
-// RA : int used as a boolean to choose over the algorithm of the radius choice; 
-//      0 means the dummy algorithm, 1 means the more sophisticated algorithm expalined at the seminar ( (intersection between areaGrid and 1/4 areaCircle)/areaGrid = 21/nPoints)
-double compute_kh(int RA) {
-	double target = 21.0 / NPTS;
-	if (NPTS < 21)
-		return sqrt(2.0);
-	else if (!RA)
-		return sqrt(2.0) * target;
-	else if (target <= M_PI / 4)
-		return sqrt(4 * target / M_PI);
-	double tolerance = 0.0000000001;
-	double kh_min = 1.0;
-	double kh_max = sqrt(2.0);
-	while (fabs(kh_max - kh_min) >= tolerance) {
-		kh_max = kh_min;
-		kh_min = sqrt((target - sin(acos(1.0 / kh_min)) * kh_min) / ((M_PI / 4 - acos(1.0 / kh_min))));
-	}
-	return kh_min;
 }
 
 void updateData(point* points, GLfloat(*data)[8]) {
@@ -79,6 +57,6 @@ static void colormap(float v, float color[3])
 
 void updateDensity(point* points, neighborhood* nh, double kh) {
 	for (int i = 0; i < NPTS; i++) {
-		points[i].density = nh[i].nNeighbours * MASS / (kh * kh * M_PI / 4);
+		points[i].density = nh[i].nNeighbours * MASSE / (kh * kh * M_PI / 4);
 	}
 }

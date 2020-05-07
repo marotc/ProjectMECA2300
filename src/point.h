@@ -2,11 +2,12 @@
 #define POINT_H
 
 #include "BOV.h"
+//#include "neighborhood_search.h"
 #include <time.h>
 #include <math.h>
 
 extern int NPTS;
-extern double MASS;
+extern double MASSE;
 extern double SOURCE_TEMP;
 extern double INIT_TEMP;
 
@@ -40,6 +41,6 @@ void updateData(point* points, GLfloat(*data)[8]);
 
 static void colormap(float v, float color[3]);
 
-void updateDensity(point* poitnts, neighborhood* nh, double kh);
+//void updateDensity(point* poitnts, neighborhood* nh, double kh);
 
 #endif
