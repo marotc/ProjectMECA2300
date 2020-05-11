@@ -7,6 +7,7 @@ add_executable(anm
 	       "${CMAKE_CURRENT_SOURCE_DIR}/src/neighborhood_search.c"
 	       "${CMAKE_CURRENT_SOURCE_DIR}/src/kernel.c"
 	       "${CMAKE_CURRENT_SOURCE_DIR}/src/point.c"
+	       "${CMAKE_CURRENT_SOURCE_DIR}/src/source.c"
                # you can add other source file here !
                )
 

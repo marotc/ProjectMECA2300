@@ -2,11 +2,12 @@
 #define POINT_H
 
 #include "BOV.h"
-//#include "neighborhood_search.h"
 #include <time.h>
 #include <math.h>
 
 extern int NPTS;
+extern int NPTS_boundaries;
+extern double vmax;
 extern double MASSE;
 extern double SOURCE_TEMP;
 extern double INIT_TEMP;
@@ -18,11 +19,17 @@ extern double INIT_TEMP;
 
 // Structure to represent a point
 typedef struct point {
-	double x;
-	double y;
-	double vx;
-	double vy;
-	double density;
+	float x;
+	float y;
+	float vx;
+	float vy;
+	float old_density;
+	float density;
+	float old_dpdx;
+	float old_dpdy;
+	float dpdx;
+	float dpdy;
+	float pressure;
 	int type; //1: normal point, 2: boundary point
 	/*
 	double val;
@@ -35,12 +42,8 @@ typedef struct point {
 
 void fillPointsRand(point* points);
 
-void fillPointsGrid(point* points);
-
 void updateData(point* points, GLfloat(*data)[8]);
 
 static void colormap(float v, float color[3]);
-
-//void updateDensity(point* poitnts, neighborhood* nh, double kh);
 
 #endif

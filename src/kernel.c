@@ -62,95 +62,52 @@ void kernel(GLfloat(*data)[14], GLfloat(*coord)[2], neighborhood* nh, double kh)
         double error = exact - data[j][10];
     }
 }
-
-/*
- Implementation of the kernel cubic function and return the weight regarding the distance and the radius of the circle
- */
-double grad_w_cubic(double distance, double kh, double d)
+double grad_w_lucy(double distance, double kh)
 {
-    double h = kh / 2;
-    double q = distance / h;
-    double weight = 0;
-    double alpha_d = 15 / (7 * M_PI * pow(h, 2));
-    
-    if (q > 0) {
-        if (q <= 1) {
-            weight = ((-2.0 * q + 1.5 * pow(q, 2)) * d) / (pow(h, 2) * q );
-        }
-        else {
-            if (q > 2) {
-                weight = 0;
-                printf("too big distance ");
-            }
-            else {
-                weight = (-0.5 * pow((2 - q), 2) * d) / (pow(h, 2) * q);
-            }
-        }
-    }
-    return weight*alpha_d;
-}
-
-double grad_w_lucy(double distance, double kh, double d)
-{
-    double h = kh / 1;
-    double q = distance / h;
+    double q = distance / kh;
+    double alpha = (5 / (M_PI * kh * kh));
     double grad_w = 0;
-    double alpha_d = (5 / (M_PI * pow(h, 2)));
     if (q >= 0 && q <= 1)
     {
-        grad_w = (-12.0 * q * alpha_d * pow((1 - q), 2)) * d /(pow(h,2) * q);
-    }
-    else
-    {
-        grad_w = 0.0;
+        grad_w = alpha * (-12 * q + 24 * q * q - 12 * q * q * q);
     }
     return  grad_w;
 }
 
-
-double grad_w_newquartic(double distance, double kh, double d)
+double w_lucy(double distance,double kh)
 {
-    double h = kh / 2;
-    double q = distance / h;
-    double grad_w = 0;
-    double alpha_d = (15 / (7 * M_PI * pow(h, 2)));
-    if (q >= 0 && q <= 2)
+    double q = distance / kh;
+    double alpha = (5 / (M_PI * kh * kh));
+    double W = 0;
+    if (distance < kh)
     {
-        grad_w = (alpha_d * (-(9.0 / 4.0) * q + (19.0 / 8.0) * pow(q, 2) - (5.0 / 8.0) * pow(q, 3)) * d) / (pow(h, 2) * q);
+        W = alpha*(1 + 3 * q) * (1 - q) * (1 - q) * (1 - q);
     }
-    else
-    {
-        grad_w = 0;
-    }
-    return  grad_w;
+    return W;
 }
 
-double grad_w_quinticspline(double distance, double kh, double d)
+
+double grad_w_lucy1D(double dx, double distance, double kh)
 {
-    double h = kh / 3;
-    double q = distance / h;
-    double x_x, y_y;
+    double q = distance / kh;
+    double alpha = (5 / (M_PI * kh * kh));
     double grad_w = 0;
-    double alpha_d = (7 / (478 * M_PI * pow(h, 2)));
-    double dq = d / (h * distance);
     if (q >= 0 && q <= 1)
     {
-        grad_w = (alpha_d * (-5 * pow((3 - q), 4) + 30 * pow((2 - q), 4) - 75 * pow((1 - q), 4)) * d) / (pow(h, 2) * q);
-    }
-    else  if (q > 1 && q <= 2)
-    {
-        grad_w = (alpha_d * (-5 * pow((3 - q), 4) + 30 * pow((2 - q), 4)) * d) / (pow(h, 2) * q);
-    }
-    else  if (q > 2 && q <= 3)
-    {
-        grad_w = (alpha_d * (-5 * pow((3 - q), 4)) * d) / (pow(h, 2) * q);
-    }
-    else
-    {
-        grad_w = 0;
+        grad_w = alpha * (-12 * q + 24 * q * q - 12 * q * q * q)*(dx)/(distance*kh);
     }
     return  grad_w;
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
