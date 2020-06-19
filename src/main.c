@@ -47,15 +47,15 @@ int main(){
 	printf("%f", kh);
 	float vx [400];
 	float vy [400];
-	float New_rho[400];
+	// float New_rho[400];
 	//neighborhood* nh = createNeighborhood(kh, points);
 	while (!bov_window_should_close(window)) 
 	{
-		if (GetAsyncKeyState(VK_RETURN) & 0x8000) {
+		if (glfwGetKey(window->self, GLFW_KEY_ENTER )==GLFW_PRESS) {
 			fillPointsRand(points);
 			updateData(points, data);
 		}
-		setDensity(points, kh, New_rho);
+		setDensity(points, kh/*, New_rho*/);
 		//updateDensity(points, kh);
 		updatePressure(points, kh);
 		updateVelocity(points, kh, vx, vy);
@@ -65,17 +65,14 @@ int main(){
 		bov_text_draw(window, msg);
 		bov_particles_draw(window, particles, 0, BOV_TILL_END);
 		bov_particles_update(particles, data, NPTS);
-		char s[60];
-		sprintf(s, " ", time);
-		bov_text_update(msg, s);
+		// char s[60];
+		// sprintf(s, " ", time);
+		// bov_text_update(msg, s);
 		bov_window_update(window); //don't wait for events => bov_window_update(window)
 	}
 	//deleteNeighborhood(nh);
 	// Creation des points
 	free(data);
 	free(points);
-	free(New_rho);
-	free(vx);
-	free(vy);
 	return EXIT_SUCCESS;
 }

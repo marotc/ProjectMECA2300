@@ -32,8 +32,8 @@ void kernel(GLfloat(*data)[14], GLfloat(*coord)[2], neighborhood* nh, double kh)
                 //double weight_x = grad_w_cubic(distance, kh, d_x);
                 //double weight_y = grad_w_cubic(distance, kh, d_y);
                 
-                double weight_x = grad_w_lucy(distance, kh, d_x);
-                double weight_y = grad_w_lucy(distance, kh, d_y);
+                double weight_x = grad_w_lucy1D(distance, kh, d_x);
+                double weight_y = grad_w_lucy1D(distance, kh, d_y);
                 
                 //double weight_x = grad_w_newquartic(distance, kh, d_x);
                 //double weight_y = grad_w_newquartic(distance, kh, d_y);
